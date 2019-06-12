@@ -16,9 +16,7 @@ class ClientSide {
     }
 
     async isSessionValid(sessionId) {
-        const valid = await call(this.#messagePort, 'isSessionValid', sessionId);
-
-        return valid;
+        return call(this.#messagePort, 'isSessionValid', sessionId);
     }
 
     async authenticate() {
@@ -34,6 +32,26 @@ class ClientSide {
 
     async unauthenticate(sessionId) {
         await call(this.#messagePort, 'unauthenticate', sessionId);
+    }
+
+    async sign(sessionId, data, options) {
+        options = {
+            signWith: 'session',
+            ...options,
+        };
+
+        if (options.signWith === 'session') {
+            return call(this.#messagePort, 'sign', sessionId, data, options);
+        }
+
+        try {
+            return await openPrompt(
+                this.#walletUrl,
+                (messagePort) => call(messagePort, 'sign', sessionId, data, options)
+            );
+        } finally {
+            closePrompt();
+        }
     }
 
     onSessionChange(fn) {

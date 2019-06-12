@@ -54,14 +54,18 @@ await (async () => {
     const idmWallet = await createIdmWallet();
 
     const idmBridgePostmsg = await createWalletSide(idmWallet, {
-        authenticate: async (app) => {
+        prePrompt: (action) => {
+            // Useful to show the lock screen
+            // `action` is either `authenticate` or `sign`
+        },
+        promptAuthenticate: async (app) => {
             // Show a prompt to either accept or deny
             const response = await promptToAcceptAndChooseIdentity(app);
 
             // response = { ok, identityId };
             return response;
         },
-        sign: async (data) => {
+        promptSign: async (app, identity, data) => {
             // Show a prompt to either accept or deny
             const response = await promptToAcceptSigning(data);
 

@@ -40,8 +40,8 @@ export class NoParentWindowError extends BaseError {
     }
 }
 
-export class MissingPromptError extends BaseError {
+export class MissingHookError extends BaseError {
     constructor(name) {
-        super(`The ${name} prompt is not configured`, 'MISSING_PROMPT');
+        super(`The ${name} hook is not configured`, 'MISSING_HOOK');
     }
 }

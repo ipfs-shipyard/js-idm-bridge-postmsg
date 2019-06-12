@@ -3,7 +3,7 @@ import pTimeout from 'p-timeout';
 import { CONNECT, CONNECT_ACK } from './message-types';
 
 const CONNECT_TIMEOUT = 10000;
-const CONNECT_WAIT_TIMEOUT = 45000;
+const CONNECT_WAIT_TIMEOUT = 30000;
 
 export const waitConnect = (childWindow) => {
     const promise = new PCancelable((resolve, reject, onCancel) => {
