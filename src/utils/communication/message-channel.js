@@ -3,7 +3,7 @@ import pTimeout from 'p-timeout';
 import { CONNECT, CONNECT_ACK } from './message-types';
 
 const CONNECT_TIMEOUT = 10000;
-const CONNECT_WAIT_TIMEOUT = 30000;
+const CONNECT_WAIT_TIMEOUT = 10000;
 
 export const waitConnect = (childWindow) => {
     const promise = new PCancelable((resolve, reject, onCancel) => {
@@ -31,7 +31,10 @@ export const waitConnect = (childWindow) => {
         window.addEventListener('message', handleMessage);
     });
 
-    return pTimeout(promise, CONNECT_WAIT_TIMEOUT);
+    return Object.assign(
+        pTimeout(promise, CONNECT_WAIT_TIMEOUT),
+        { cancel: () => promise.cancel() }
+    );
 };
 
 export const connect = (parentWindow) => {
@@ -63,5 +66,8 @@ export const connect = (parentWindow) => {
         parentWindow.postMessage({ type: CONNECT }, '*', [port2]);
     });
 
-    return pTimeout(promise, CONNECT_TIMEOUT);
+    return Object.assign(
+        pTimeout(promise, CONNECT_TIMEOUT),
+        { cancel: () => promise.cancel() }
+    );
 };

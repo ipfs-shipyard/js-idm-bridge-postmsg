@@ -28,7 +28,7 @@ This library is written in modern JavaScript and is published in both CommonJS a
 
 ## Usage
 
-On the client-side of the bridge:
+**On the client-side of the bridge:**
 
 ```js
 import { createClientSide } from 'idm-bridge-postmsg';
@@ -42,9 +42,44 @@ const app = {
 const idmWalletUrl = 'http://nomios.io';
 
 await (async () => {
-    const idmBridgePostmsg = await createClientSide(app, idmWalletUrl);
+    const clientSide = await createClientSide(app, idmWalletUrl);
 })();
 ```
+
+**On the mediator-side of the bridge (operating on the wallet domain):**
+
+```js
+import { createMediatorSide } from 'idm-bridge-postmsg';
+
+await (async () => {
+    const mediatorSide = await createMediatorSide();
+
+    mediatorSide.setPrompts({
+        unlock: ({ pristine, lockTypes, unlockFn }) => {
+            // Show the lock screen and unlock with `unlockFn(lockType, input)`
+
+            // response = { ok };
+            return response;
+        },
+        authenticate: async ({ app, identities }) => {
+            // Show a prompt to either accept or deny
+            const response = await promptToAcceptAndChooseIdentity(app, identities);
+
+            // response = { ok, identityId };
+            return response;
+        },
+        sign: async ({ app, identity, data }) => {
+            // Show a prompt to either accept or deny
+            const response = await promptToAcceptSigning(app, identity, data);
+
+            // response = { ok };
+            return response;
+        },
+    });
+})();
+```
+
+**On the wallet-side of the bridge:**
 
 ```js
 import { createWalletSide } from 'idm-bridge-postmsg';
@@ -52,28 +87,20 @@ import createIdmWallet from 'idm-wallet';
 
 await (async () => {
     const idmWallet = await createIdmWallet();
-
-    const idmBridgePostmsg = await createWalletSide(idmWallet, {
-        prePrompt: (action) => {
-            // Useful to show the lock screen
-            // `action` is either `authenticate` or `sign`
-        },
-        promptAuthenticate: async (app) => {
-            // Show a prompt to either accept or deny
-            const response = await promptToAcceptAndChooseIdentity(app);
-
-            // response = { ok, identityId };
-            return response;
-        },
-        promptSign: async (app, identity, data) => {
-            // Show a prompt to either accept or deny
-            const response = await promptToAcceptSigning(data);
-
-            // response = { ok };
-            return response;
-        },
-    });
+    const walletSide = await createWalletSide(idmWallet);
 })();
+```
+
+*NOTE*: To know if you either must use `createMediatorSide` or `createWalletSide` you may use the `hasParent` function:
+
+```js
+import { hasParent } from 'idm-bridge-postmsg';
+
+if (hasParent()) {
+    // Create mediator side
+} else {
+    // Create wallet side
+}
 ```
 
 

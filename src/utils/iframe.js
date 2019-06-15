@@ -1,4 +1,4 @@
-import { waitConnect } from '../utils/message-channel';
+import { waitConnect } from './communication/message-channel';
 
 let childIframe;
 
