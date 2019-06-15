@@ -45,3 +45,9 @@ export class MissingPromptError extends BaseError {
         super(`The ${name} prompt is not configured`, 'MISSING_PROMPT');
     }
 }
+
+export class UnknownSessionError extends BaseError {
+    constructor(sessionId) {
+        super(`Unknown session with: ${sessionId}`, 'UNKNOWN_SESSION');
+    }
+}
