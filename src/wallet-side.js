@@ -71,7 +71,6 @@ class WalletSide {
     }
 
     async getDataForAuthenticatePrompt() {
-        await this.#idmWallet.identities.load();
         const identities = this.#idmWallet.identities.list();
 
         return {
