@@ -53,6 +53,7 @@ class MediatorSide {
     }
 
     async authenticate(app) {
+        this.#assertPrompt('unlock');
         this.#assertPrompt('authenticate');
         this.#assertAppSameOrigin(app);
 
