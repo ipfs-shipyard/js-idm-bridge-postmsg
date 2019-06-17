@@ -1,5 +1,5 @@
-import { createWalletSide } from '../src';
+import { createClientSide } from '../src';
 
-it('should export createWalletSide', async () => {
-    expect(typeof createWalletSide).toBe('function');
+it('should export createClientSide', async () => {
+    expect(typeof createClientSide).toBe('function');
 });
