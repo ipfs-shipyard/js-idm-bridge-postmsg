@@ -25,7 +25,11 @@ class ClientSide {
     async authenticate(app) {
         return openPrompt(
             this.#walletUrl,
-            (mediatorPort) => createCaller(mediatorPort)('authenticate', app)
+            async (mediatorPort) => {
+                const caller = createCaller(mediatorPort, { timeout: 0 });
+
+                return caller('authenticate', app);
+            }
         );
     }
 
@@ -45,7 +49,11 @@ class ClientSide {
 
         return openPrompt(
             this.#walletUrl,
-            (mediatorPort) => createCaller(mediatorPort)('sign', sessionId, data, options)
+            async (mediatorPort) => {
+                const caller = createCaller(mediatorPort, { timeout: 0 });
+
+                return caller('sign', sessionId, data, options);
+            }
         );
     }
 
