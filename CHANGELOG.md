@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.2](https://github.com/ipfs-shipyard/js-idm-bridge-postmsg/compare/v0.2.1...v0.2.2) (2019-06-17)
+
+
+### Bug Fixes
+
+* make iframe absolute to prevent rendering issues ([193b079](https://github.com/ipfs-shipyard/js-idm-bridge-postmsg/commit/193b079))
+
+
+
 ### [0.2.1](https://github.com/ipfs-shipyard/js-idm-bridge-postmsg/compare/v0.2.0...v0.2.1) (2019-06-16)
 
 
