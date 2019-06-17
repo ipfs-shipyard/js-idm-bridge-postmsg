@@ -15,7 +15,7 @@ export const createIframe = async (url) => {
     childIframe = document.createElement('iframe');
     childIframe.id = 'idm-bridge-postmsg';
     childIframe.src = url;
-    childIframe.style = 'width:0;height:0;border:0';
+    childIframe.style = 'position:absolute;width:0;height:0;border:0';
 
     document.body.appendChild(childIframe);
 
