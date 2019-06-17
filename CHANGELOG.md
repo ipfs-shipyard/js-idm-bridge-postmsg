@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.3](https://github.com/ipfs-shipyard/js-idm-bridge-postmsg/compare/v0.2.2...v0.2.3) (2019-06-17)
+
+
+### Bug Fixes
+
+* remove builting rpc timeout on prompts ([c6fe78a](https://github.com/ipfs-shipyard/js-idm-bridge-postmsg/commit/c6fe78a))
+
+
+
 ### [0.2.2](https://github.com/ipfs-shipyard/js-idm-bridge-postmsg/compare/v0.2.1...v0.2.2) (2019-06-17)
 
 
