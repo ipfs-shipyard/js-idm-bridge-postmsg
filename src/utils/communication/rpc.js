@@ -37,8 +37,8 @@ export const createCaller = (target, options) => {
     const rpcOptions = createRpcOptions(target);
 
     options = {
-        ...options,
         timeout: 30000,
+        ...options,
     };
 
     return (funcName, ...args) => {
