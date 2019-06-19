@@ -1,6 +1,6 @@
 {
   "name": "idm-bridge-postmsg",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "The postMessage bridge to be used by both IDM Wallets and IDM Clients",
   "main": "lib/index.js",
   "module": "es/index.js",

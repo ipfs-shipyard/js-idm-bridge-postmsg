@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.5](https://github.com/ipfs-shipyard/js-idm-bridge-postmsg/compare/v0.2.4...v0.2.5) (2019-06-19)
+
+
+### Features
+
+* add the capability to define minWidth and minSize ([9be86fc](https://github.com/ipfs-shipyard/js-idm-bridge-postmsg/commit/9be86fc))
+
+
+
 ### [0.2.4](https://github.com/ipfs-shipyard/js-idm-bridge-postmsg/compare/v0.2.3...v0.2.4) (2019-06-18)
 
 
