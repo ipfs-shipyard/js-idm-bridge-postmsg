@@ -3,12 +3,13 @@ import { PromptClosedError } from './errors';
 import { waitConnect } from './communication/message-channel';
 
 const WINDOW_NAME = '__IDM_BRIDGE_POSTMSG__';
+const WINDOW_SIZE = { width: 620, height: 700 };
 const MONITOR_WINDOW_CLOSED_INTERVAL = 1000;
 
 let promptWindow;
 
-const openWindow = (url, options) => {
-    const { width, height } = options;
+const openWindow = (url) => {
+    const { width, height } = WINDOW_SIZE;
     const top = (window.top.outerHeight / 2) + window.top.screenY - (height / 2);
     const left = (window.top.outerWidth / 2) + window.top.screenX - (width / 2);
 
@@ -44,16 +45,10 @@ export const closePrompt = () => {
     }
 };
 
-export const openPrompt = async (url, fn, options) => {
-    options = {
-        width: 620,
-        height: 700,
-        ...options,
-    };
-
+export const openPrompt = async (url, fn) => {
     closePrompt();
 
-    const promptWindowRef = promptWindow = openWindow(url, options);
+    const promptWindowRef = promptWindow = openWindow(url);
 
     const windowClosedPromise = monitorWindowClosed(promptWindowRef);
     const waitConnectPromise = waitConnect(promptWindowRef);

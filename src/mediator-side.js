@@ -2,6 +2,7 @@ import { sha256 } from './utils/sha';
 import { createExposer, createCaller } from './utils/communication/rpc';
 import { connect as connectClient } from './utils/communication/message-channel';
 import { connect as connectWallet } from './utils/communication/broadcast-channel';
+import { getParentWindow, setWindowSize } from './utils/window';
 import { NoParentWindowError, MissingPromptError, PromptDeniedError, OriginMismatchError, UnknownSessionError } from './utils/errors';
 
 const WALLET_CHANNEL_NAME = '__IDM_BRIDGE_POSTMSG_WALLET__';
@@ -182,20 +183,22 @@ class MediatorSide {
     }
 }
 
-const getParentWindow = () => {
-    const parentWindow = window.opener || window.parent;
-
-    return parentWindow && parentWindow !== self ? parentWindow : null;
-};
-
 export const hasParent = () => !!getParentWindow();
 
-const createMediatorSide = async () => {
+const createMediatorSide = async (options) => {
+    options = {
+        minWidth: undefined,
+        minHeight: undefined,
+        ...options,
+    };
+
     const parentWindow = getParentWindow();
 
     if (!parentWindow) {
         throw new NoParentWindowError();
     }
+
+    setWindowSize(options.minWidth, options.minHeight);
 
     const walletChannel = await connectWallet(WALLET_CHANNEL_NAME);
     const { origin, messagePort } = await connectClient(parentWindow);

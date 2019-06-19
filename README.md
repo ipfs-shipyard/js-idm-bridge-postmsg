@@ -52,7 +52,12 @@ await (async () => {
 import { createMediatorSide } from 'idm-bridge-postmsg';
 
 await (async () => {
-    const mediatorSide = await createMediatorSide();
+    const options = {
+        minWidth: 500 // Defaults to 620
+        minHeight: 630 // Defaults to 700
+    };
+
+    const mediatorSide = await createMediatorSide(options);
 
     mediatorSide.setPrompts({
         unlock: ({ pristine, lockTypes, unlockFn }) => {
