@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.6](https://github.com/ipfs-shipyard/js-idm-bridge-postmsg/compare/v0.2.5...v0.2.6) (2019-06-19)
+
+
+### Bug Fixes
+
+* do not list revoked identities in auth prompt ([48af2b2](https://github.com/ipfs-shipyard/js-idm-bridge-postmsg/commit/48af2b2))
+
+
+
 ### [0.2.5](https://github.com/ipfs-shipyard/js-idm-bridge-postmsg/compare/v0.2.4...v0.2.5) (2019-06-19)
 
 
