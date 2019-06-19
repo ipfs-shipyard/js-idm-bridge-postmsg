@@ -16,7 +16,7 @@ const openWindow = (url) => {
     return window.open(
         url,
         WINDOW_NAME,
-        `width=${width}, height=${height}, top=${top}, left=${left}`
+        `width=${width}, height=${height},top=${top},left=${left},resizable=no`
     );
 };
 
