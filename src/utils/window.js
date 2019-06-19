@@ -6,7 +6,7 @@ export const getParentWindow = () => {
     return parentWindow && parentWindow !== self ? parentWindow : null;
 };
 
-export const setWindowSize = (minWidth = 620, minHeight = 720) => {
+export const setWindowSize = (minWidth = 620, minHeight = 700) => {
     // Ignore in case of iframe
     if (!window.opener) {
         return;
