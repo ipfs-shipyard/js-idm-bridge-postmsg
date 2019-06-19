@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.7](https://github.com/ipfs-shipyard/js-idm-bridge-postmsg/compare/v0.2.6...v0.2.7) (2019-06-19)
+
+
+### Bug Fixes
+
+* fix wrong default minHeight ([ee5147b](https://github.com/ipfs-shipyard/js-idm-bridge-postmsg/commit/ee5147b))
+
+
+
 ### [0.2.6](https://github.com/ipfs-shipyard/js-idm-bridge-postmsg/compare/v0.2.5...v0.2.6) (2019-06-19)
 
 
