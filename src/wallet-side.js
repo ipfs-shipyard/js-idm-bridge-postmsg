@@ -71,7 +71,7 @@ class WalletSide {
     }
 
     async getDataForAuthenticatePrompt() {
-        const identities = this.#idmWallet.identities.list();
+        const identities = this.#idmWallet.identities.list().filter((identity) => !identity.isRevoked());
 
         return {
             identities: identities.map(this.#serializeIdentity),
