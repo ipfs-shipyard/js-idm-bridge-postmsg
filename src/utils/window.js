@@ -6,7 +6,7 @@ export const getParentWindow = () => {
     return parentWindow && parentWindow !== self ? parentWindow : null;
 };
 
-export const setWindowSize = (minWidth = 620, minHeight = 700) => {
+export const setupWindow = (minWidth, minHeight) => {
     // Ignore in case of iframe
     if (!window.opener) {
         return;
@@ -27,8 +27,13 @@ export const setWindowSize = (minWidth = 620, minHeight = 700) => {
     updateSize();
 
     const handleResize = debounce(updateSize, 500);
+    const handleUnload = () => window.close();
 
+    window.addEventListener('unload', handleUnload);
     window.addEventListener('resize', handleResize);
 
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+        window.removeEventListener('unload', handleUnload);
+        window.removeEventListener('resize', handleResize);
+    };
 };

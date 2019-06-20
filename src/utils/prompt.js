@@ -1,22 +1,26 @@
 import PCancelable from 'p-cancelable';
 import { PromptClosedError } from './errors';
-import { waitConnect } from './communication/message-channel';
+import { waitConnect } from './communication/window-channel';
 
 const WINDOW_NAME = '__IDM_BRIDGE_POSTMSG__';
-const WINDOW_SIZE = { width: 620, height: 700 };
 const MONITOR_WINDOW_CLOSED_INTERVAL = 1000;
 
 let promptWindow;
 
-const openWindow = (url) => {
-    const { width, height } = WINDOW_SIZE;
-    const top = (window.top.outerHeight / 2) + window.top.screenY - (height / 2);
-    const left = (window.top.outerWidth / 2) + window.top.screenX - (width / 2);
+const openWindow = (url, options) => {
+    options = {
+        width: 620,
+        height: 728,
+        ...options,
+    };
+
+    const top = (window.top.outerHeight / 2) + window.top.screenY - (options.height / 2);
+    const left = (window.top.outerWidth / 2) + window.top.screenX - (options.width / 2);
 
     return window.open(
         url,
         WINDOW_NAME,
-        `width=${width}, height=${height},top=${top},left=${left},resizable=no`
+        `width=${options.width}, height=${options.height},top=${top},left=${left},resizable=no`
     );
 };
 
@@ -45,13 +49,18 @@ export const closePrompt = () => {
     }
 };
 
-export const openPrompt = async (url, fn) => {
+export const openPrompt = async (url, fn, options) => {
     closePrompt();
 
-    const promptWindowRef = promptWindow = openWindow(url);
+    const { origin } = new URL(url);
 
-    const windowClosedPromise = monitorWindowClosed(promptWindowRef);
-    const waitConnectPromise = waitConnect(promptWindowRef);
+    const childWindow = promptWindow = openWindow(url, options);
+
+    const windowClosedPromise = monitorWindowClosed(childWindow);
+    const waitConnectPromise = waitConnect(childWindow, {
+        ...options,
+        childOrigin: origin,
+    });
 
     try {
         await Promise.race([
@@ -61,12 +70,12 @@ export const openPrompt = async (url, fn) => {
     } catch (err) {
         waitConnectPromise.cancel();
         windowClosedPromise.cancel();
-        closePromptIfSame(promptWindowRef);
+        closePromptIfSame(childWindow);
         throw err;
     }
 
-    const { messagePort } = await waitConnectPromise;
-    const resultPromise = fn(messagePort);
+    const windowChannel = await waitConnectPromise;
+    const resultPromise = fn(windowChannel);
 
     try {
         await Promise.race([
@@ -74,15 +83,14 @@ export const openPrompt = async (url, fn) => {
             windowClosedPromise,
         ]);
     } catch (err) {
-        resultPromise && resultPromise.cancel && resultPromise.cancel();
+        windowChannel.close();
         windowClosedPromise.cancel();
-        messagePort.close();
-        closePromptIfSame(promptWindowRef);
+        closePromptIfSame(childWindow);
         throw err;
     }
 
     windowClosedPromise.cancel();
-    closePromptIfSame(promptWindowRef);
+    closePromptIfSame(childWindow);
 
     return resultPromise;
 };

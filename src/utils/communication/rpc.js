@@ -2,17 +2,32 @@ import { RPC_CALL } from './message-types';
 import pTimeout from 'p-timeout';
 import * as rpc from 'postmsg-rpc';
 
-const createRpcOptions = (target) => ({
-    postMessage: (data) => target.postMessage({ type: RPC_CALL, payload: data }),
-    addListener: (name, handler) => target.addEventListener(name, handler),
-    removeListener: (name, handler) => target.removeEventListener(name, handler),
-    getMessageData: (message) => message.data && message.data.payload,
+const isSameOrigin = (message, targetOrigin) => targetOrigin === '*' || message.origin === targetOrigin;
+
+const createRpcOptions = (self, target, targetOrigin) => ({
+    postMessage: (data) => target.postMessage({ type: RPC_CALL, payload: data }, targetOrigin),
+    addListener: (name, handler) => self.addEventListener(name, handler),
+    removeListener: (name, handler) => self.removeEventListener(name, handler),
+    getMessageData: (message) => {
+        // Return an empty message from unexpected origins
+        if (!isSameOrigin(message, targetOrigin)) {
+            return null;
+        }
+
+        return message.data && message.data.payload;
+    },
 });
 
-export const createExposer = (target) => {
-    const rpcOptions = createRpcOptions(target);
+const createExposer = (self, target, options) => {
+    options = {
+        targetOrigin: '*',
+        ...options,
+    };
 
-    return (funcName, func) => {
+    const rpcOptions = createRpcOptions(self, target, options.targetOrigin);
+    const closeFns = new Set();
+
+    const expose = (funcName, func) => {
         // Wrap `func` so that we preserve error codes
         // See: https://github.com/tableflip/postmsg-rpc/blob/5f3905523dc1c07db8f4987bb4a21f29c943996b/src/server.js#L24
         const wrappedFunc = async (...args) => {
@@ -29,25 +44,70 @@ export const createExposer = (target) => {
 
         const { close } = rpc.expose(funcName, wrappedFunc, rpcOptions);
 
-        return close;
+        closeFns.add(close);
+    };
+
+    const close = () => {
+        closeFns.forEach((fn) => fn());
+        closeFns.clear();
+    };
+
+    return {
+        expose,
+        close,
     };
 };
 
-export const createCaller = (target, options) => {
-    const rpcOptions = createRpcOptions(target);
-
+const createCaller = (self, target, options) => {
     options = {
-        timeout: 30000,
+        callTimeout: 30000,
+        targetOrigin: '*',
         ...options,
     };
 
-    return (funcName, ...args) => {
-        let promise = rpc.caller(funcName, rpcOptions)(...args);
+    const rpcOptions = createRpcOptions(self, target, options.targetOrigin);
+    const closeFns = new Set();
 
-        if (options.timeout) {
-            promise = pTimeout(promise, options.timeout);
-        }
+    const call = (funcName, ...args) => {
+        const promise = rpc.caller(funcName, rpcOptions)(...args);
 
-        return promise;
+        closeFns.add(promise.cancel);
+
+        promise
+        .finally(() => closeFns.delete(promise.cancel))
+        .catch(() => {});
+
+        return Object.assign(
+            pTimeout(promise, options.callTimeout),
+            { cancel: () => promise.cancel() }
+        );
+    };
+
+    const close = () => {
+        closeFns.forEach((fn) => fn());
+        closeFns.clear();
+    };
+
+    return {
+        call,
+        close,
     };
 };
+
+const createRpc = (self, target, options) => {
+    const { expose, close: closeExposer } = createExposer(self, target, options);
+    const { call, close: closeCaller } = createCaller(self, target, options);
+
+    const close = () => {
+        closeExposer();
+        closeCaller();
+    };
+
+    return {
+        expose,
+        call,
+        close,
+    };
+};
+
+export default createRpc;

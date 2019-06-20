@@ -1,40 +1,36 @@
 import signal from 'pico-signals';
 import { openPrompt } from './utils/prompt';
 import { createIframe } from './utils/iframe';
-import { createCaller, createExposer } from './utils/communication/rpc';
+
+const PROMPT_CALL_TIMEOUT = 10 * 60000;
 
 class ClientSide {
     #walletUrl;
-    #callMediator;
+    #mediatorChannel;
 
     #onSessionChange = signal();
 
-    constructor(walletUrl, mediatorPort) {
+    constructor(walletUrl, mediatorChannel) {
         this.#walletUrl = walletUrl;
-        this.#callMediator = createCaller(mediatorPort);
+        this.#mediatorChannel = mediatorChannel;
 
-        const expose = createExposer(mediatorPort);
-
-        expose('onSessionDestroy', this.#handleSessionDestroy);
+        this.#mediatorChannel.expose('onSessionDestroy', this.#handleSessionDestroy);
     }
 
     async isSessionValid(sessionId) {
-        return this.#callMediator('isSessionValid', sessionId);
+        return this.#mediatorChannel.call('isSessionValid', sessionId);
     }
 
     async authenticate(app) {
         return openPrompt(
             this.#walletUrl,
-            async (mediatorPort) => {
-                const caller = createCaller(mediatorPort, { timeout: 0 });
-
-                return caller('authenticate', app);
-            }
+            (mediatorChannel) => mediatorChannel.call('authenticate', app),
+            { callTimeout: PROMPT_CALL_TIMEOUT }
         );
     }
 
     async unauthenticate(sessionId) {
-        await this.#callMediator('unauthenticate', sessionId);
+        await this.#mediatorChannel.call('unauthenticate', sessionId);
     }
 
     async sign(sessionId, data, options) {
@@ -44,16 +40,13 @@ class ClientSide {
         };
 
         if (options.signWith === 'session') {
-            return this.#callMediator('sign', sessionId, data, options);
+            return this.#mediatorChannel.call('sign', sessionId, data, options);
         }
 
         return openPrompt(
             this.#walletUrl,
-            async (mediatorPort) => {
-                const caller = createCaller(mediatorPort, { timeout: 0 });
-
-                return caller('sign', sessionId, data, options);
-            }
+            (mediatorChannel) => mediatorChannel.call('sign', sessionId, data, options),
+            { callTimeout: PROMPT_CALL_TIMEOUT }
         );
     }
 
@@ -62,14 +55,14 @@ class ClientSide {
     }
 
     #handleSessionDestroy = (sessionId) => {
-        this.#onSessionChange.dispatch(sessionId, null);
+        this.#onSessionChange.dispatch(sessionId, undefined);
     }
 }
 
 const createClientSide = async (walletUrl) => {
-    const mediatorPort = await createIframe(walletUrl);
+    const mediatorChannel = await createIframe(walletUrl);
 
-    return new ClientSide(walletUrl, mediatorPort);
+    return new ClientSide(walletUrl, mediatorChannel);
 };
 
 export default createClientSide;

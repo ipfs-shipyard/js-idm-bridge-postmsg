@@ -1,34 +1,27 @@
 import { sha256 } from './utils/sha';
-import { createExposer, createCaller } from './utils/communication/rpc';
-import { connect as connectClient } from './utils/communication/message-channel';
+import { connect as connectClient } from './utils/communication/window-channel';
 import { connect as connectWallet } from './utils/communication/broadcast-channel';
-import { getParentWindow, setWindowSize } from './utils/window';
+import { getParentWindow, setupWindow } from './utils/window';
 import { NoParentWindowError, MissingPromptError, PromptDeniedError, OriginMismatchError, UnknownSessionError } from './utils/errors';
 
 const WALLET_CHANNEL_NAME = '__IDM_BRIDGE_POSTMSG_WALLET__';
 
 class MediatorSide {
-    #clientOrigin;
-    #callClient;
-    #callWallet;
+    #clientChannel;
+    #walletChannel;
 
     #prompts;
 
-    constructor(clientOrigin, clientPort, walletChannel) {
-        this.#clientOrigin = clientOrigin;
-        this.#callClient = createCaller(clientPort);
-        this.#callWallet = createCaller(walletChannel);
+    constructor(clientChannel, walletChannel) {
+        this.#clientChannel = clientChannel;
+        this.#walletChannel = walletChannel;
 
-        const exposeOnClient = createExposer(clientPort);
+        clientChannel.expose('isSessionValid', this.isSessionValid.bind(this));
+        clientChannel.expose('authenticate', this.authenticate.bind(this));
+        clientChannel.expose('unauthenticate', this.unauthenticate.bind(this));
+        clientChannel.expose('sign', this.sign.bind(this));
 
-        exposeOnClient('isSessionValid', this.isSessionValid.bind(this));
-        exposeOnClient('authenticate', this.authenticate.bind(this));
-        exposeOnClient('unauthenticate', this.unauthenticate.bind(this));
-        exposeOnClient('sign', this.sign.bind(this));
-
-        const exposeOnWallet = createExposer(walletChannel);
-
-        exposeOnWallet('onSessionDestroy', this.#handleSessionDestroy);
+        walletChannel.expose('onSessionDestroy', this.#handleSessionDestroy);
     }
 
     setPrompts(prompts) {
@@ -60,11 +53,11 @@ class MediatorSide {
 
         await this.#promptUnlock();
 
-        app.id = await sha256(this.#clientOrigin);
+        app.id = await sha256(this.#clientChannel.parentOrigin);
 
         const { identityId, identities } = await this.#promptAuthenticate(app);
 
-        const session = await this.#callWallet('createSession', identityId, app, { meta: this.#clientOrigin });
+        const session = await this.#walletChannel.call('createSession', identityId, app, { meta: this.#clientChannel.parentOrigin });
         const identity = identities.find((identity) => identity.id === identityId);
 
         return {
@@ -77,7 +70,7 @@ class MediatorSide {
     async unauthenticate(sessionId) {
         await this.#retrieveSession(sessionId);
 
-        await this.#callWallet('destroySession', sessionId);
+        await this.#walletChannel.call('destroySession', sessionId);
     }
 
     async sign(sessionId, data, options) {
@@ -89,7 +82,7 @@ class MediatorSide {
         const session = await this.#retrieveSession(sessionId);
 
         if (options.signWith === 'session') {
-            return this.#callWallet('signWithSession', sessionId, data);
+            return this.#walletChannel.call('signWithSession', sessionId, data);
         }
 
         this.#assertPrompt('unlock');
@@ -98,21 +91,21 @@ class MediatorSide {
         await this.#promptUnlock();
         await this.#promptSign(sessionId, data);
 
-        return this.#callWallet('signWithDevice', session.identityId, data);
+        return this.#walletChannel.call('signWithDevice', session.identityId, data);
     }
 
     #handleSessionDestroy = (sessionId, sessionMeta) => {
-        if (sessionMeta === this.#clientOrigin) {
-            this.#callClient('onSessionDestroy', sessionId).catch(() => {});
+        if (sessionMeta === this.#clientChannel.parentOrigin) {
+            this.#clientChannel.call('onSessionDestroy', sessionId).catch(() => {});
         }
     }
 
     #promptUnlock = async () => {
         const unlockFn = async (lockType, input) => {
-            await this.#callWallet('unlock', lockType, input);
+            await this.#walletChannel.call('unlock', lockType, input);
         };
 
-        const { pristine, enabledLockTypes } = await this.#callWallet('getDataForUnlockPrompt');
+        const { pristine, enabledLockTypes } = await this.#walletChannel.call('getDataForUnlockPrompt');
         const { ok } = await this.#prompts.unlock({ pristine, enabledLockTypes, unlockFn });
 
         if (!ok) {
@@ -123,7 +116,7 @@ class MediatorSide {
     }
 
     #promptAuthenticate = async (app) => {
-        const { identities } = await this.#callWallet('getDataForAuthenticatePrompt');
+        const { identities } = await this.#walletChannel.call('getDataForAuthenticatePrompt');
         const { ok, identityId } = await this.#prompts.authenticate({ app, identities });
 
         if (!ok) {
@@ -134,7 +127,7 @@ class MediatorSide {
     }
 
     #promptSign = async (sessionId, data) => {
-        const { app, identity } = await this.#callWallet('getDataForSignPrompt', sessionId);
+        const { app, identity } = await this.#walletChannel.call('getDataForSignPrompt', sessionId);
         const { ok } = await this.#prompts.sign({ app, identity, data });
 
         if (!ok) {
@@ -148,7 +141,7 @@ class MediatorSide {
         let session;
 
         try {
-            session = await this.#callWallet('getSession', sessionId);
+            session = await this.#walletChannel.call('getSession', sessionId);
 
             this.#assertSessionOrigin(session);
         } catch (err) {
@@ -167,8 +160,8 @@ class MediatorSide {
     }
 
     #assertSessionOrigin = (session) => {
-        if (session.meta !== this.#clientOrigin) {
-            throw new OriginMismatchError(this.#clientOrigin, session.meta);
+        if (session.meta !== this.#clientChannel.parentOrigin) {
+            throw new OriginMismatchError(this.#clientChannel.parentOrigin, session.meta);
         }
     }
 
@@ -176,8 +169,8 @@ class MediatorSide {
         if (app.homepageUrl) {
             const { origin } = new URL(app.homepageUrl);
 
-            if (origin !== this.#clientOrigin) {
-                throw new OriginMismatchError(origin, this.#clientOrigin);
+            if (origin !== this.#clientChannel.parentOrigin) {
+                throw new OriginMismatchError(origin, this.#clientChannel.parentOrigin);
             }
         }
     }
@@ -187,8 +180,8 @@ export const hasParent = () => !!getParentWindow();
 
 const createMediatorSide = async (options) => {
     options = {
-        minWidth: undefined,
-        minHeight: undefined,
+        minWidth: 620,
+        minHeight: 700,
         ...options,
     };
 
@@ -198,12 +191,12 @@ const createMediatorSide = async (options) => {
         throw new NoParentWindowError();
     }
 
-    setWindowSize(options.minWidth, options.minHeight);
+    setupWindow(options.minWidth, options.minHeight);
 
     const walletChannel = await connectWallet(WALLET_CHANNEL_NAME);
-    const { origin, messagePort } = await connectClient(parentWindow);
+    const clientChannel = await connectClient(parentWindow);
 
-    return new MediatorSide(origin, messagePort, walletChannel);
+    return new MediatorSide(clientChannel, walletChannel);
 };
 
 export default createMediatorSide;

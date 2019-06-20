@@ -1,4 +1,4 @@
-import { waitConnect } from './communication/message-channel';
+import { waitConnect } from './communication/window-channel';
 
 let childIframe;
 
@@ -9,8 +9,10 @@ export const destroyIframe = () => {
     }
 };
 
-export const createIframe = async (url) => {
+export const createIframe = async (url, options) => {
     destroyIframe();
+
+    const { origin } = new URL(url);
 
     childIframe = document.createElement('iframe');
     childIframe.id = 'idm-bridge-postmsg';
@@ -19,7 +21,10 @@ export const createIframe = async (url) => {
 
     document.body.appendChild(childIframe);
 
-    const { messagePort } = await waitConnect(childIframe.contentWindow);
+    const channel = await waitConnect(childIframe.contentWindow, {
+        ...options,
+        childOrigin: origin,
+    });
 
-    return messagePort;
+    return channel;
 };

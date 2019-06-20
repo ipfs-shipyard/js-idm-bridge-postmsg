@@ -1,10 +1,14 @@
 import PCancelable from 'p-cancelable';
 import pTimeout from 'p-timeout';
 import { CONNECT, CONNECT_ACK } from './message-types';
+import createRpc from './rpc';
 
-const CONNECT_TIMEOUT = 10000;
+export const listen = (channelName, options) => {
+    options = {
+        callTimeout: 30000,
+        ...options,
+    };
 
-export const listen = (channelName) => {
     const broadcastChannel = new BroadcastChannel(channelName);
 
     broadcastChannel.addEventListener('message', (message) => {
@@ -15,10 +19,29 @@ export const listen = (channelName) => {
         broadcastChannel.postMessage({ type: CONNECT_ACK });
     });
 
-    return broadcastChannel;
+    const rpc = createRpc(broadcastChannel, broadcastChannel, {
+        callTimeout: options.callTimeout,
+    });
+
+    const close = () => {
+        rpc.close();
+        broadcastChannel.close();
+    };
+
+    return {
+        ...rpc,
+        close,
+    };
 };
 
-export const connect = (channelName) => {
+export const connect = (channelName, options) => {
+    options = {
+        interval: 500,
+        timeout: 10000,
+        callTimeout: 30000,
+        ...options,
+    };
+
     const broadcastChannel = new BroadcastChannel(channelName);
 
     const promise = new PCancelable((resolve, reject, onCancel) => {
@@ -33,7 +56,20 @@ export const connect = (channelName) => {
             }
 
             cleanup();
-            resolve(broadcastChannel);
+
+            const rpc = createRpc(broadcastChannel, broadcastChannel, {
+                callTimeout: options.callTimeout,
+            });
+
+            const close = () => {
+                rpc.close();
+                broadcastChannel.close();
+            };
+
+            resolve({
+                ...rpc,
+                close,
+            });
         };
 
         onCancel(() => {
@@ -43,8 +79,13 @@ export const connect = (channelName) => {
 
         broadcastChannel.addEventListener('message', handleMessage);
 
-        const intervalId = setInterval(() => broadcastChannel.postMessage({ type: CONNECT }), 500);
+        const intervalId = setInterval(() => {
+            broadcastChannel.postMessage({ type: CONNECT });
+        }, options.interval);
     });
 
-    return pTimeout(promise, CONNECT_TIMEOUT);
+    return Object.assign(
+        pTimeout(promise, options.timeout),
+        { cancel: () => promise.cancel() }
+    );
 };

@@ -1,27 +1,24 @@
-import { createExposer, createCaller } from './utils/communication/rpc';
 import { listen } from './utils/communication/broadcast-channel';
 
 const WALLET_CHANNEL_NAME = '__IDM_BRIDGE_POSTMSG_WALLET__';
 
 class WalletSide {
     #idmWallet;
-    #callMediator;
+    #walletChannel;
 
     constructor(idmWallet, walletChannel) {
         this.#idmWallet = idmWallet;
-        this.#callMediator = createCaller(walletChannel, { timeout: 1 });
+        this.#walletChannel = walletChannel;
 
-        const expose = createExposer(walletChannel);
-
-        expose('unlock', this.unlock.bind(this));
-        expose('getSession', this.getSession.bind(this));
-        expose('createSession', this.createSession.bind(this));
-        expose('destroySession', this.destroySession.bind(this));
-        expose('signWithSession', this.signWithSession.bind(this));
-        expose('signWithDevice', this.signWithDevice.bind(this));
-        expose('getDataForUnlockPrompt', this.getDataForUnlockPrompt.bind(this));
-        expose('getDataForAuthenticatePrompt', this.getDataForAuthenticatePrompt.bind(this));
-        expose('getDataForSignPrompt', this.getDataForSignPrompt.bind(this));
+        this.#walletChannel.expose('unlock', this.unlock.bind(this));
+        this.#walletChannel.expose('getSession', this.getSession.bind(this));
+        this.#walletChannel.expose('createSession', this.createSession.bind(this));
+        this.#walletChannel.expose('destroySession', this.destroySession.bind(this));
+        this.#walletChannel.expose('signWithSession', this.signWithSession.bind(this));
+        this.#walletChannel.expose('signWithDevice', this.signWithDevice.bind(this));
+        this.#walletChannel.expose('getDataForUnlockPrompt', this.getDataForUnlockPrompt.bind(this));
+        this.#walletChannel.expose('getDataForAuthenticatePrompt', this.getDataForAuthenticatePrompt.bind(this));
+        this.#walletChannel.expose('getDataForSignPrompt', this.getDataForSignPrompt.bind(this));
 
         this.#idmWallet.sessions.onDestroy(this.#handleSessionDestroy);
     }
@@ -91,7 +88,7 @@ class WalletSide {
     }
 
     #handleSessionDestroy = (sessionId, sessionMeta) => {
-        this.#callMediator('onSessionDestroy', sessionId, sessionMeta).catch(() => {});
+        this.#walletChannel.call('onSessionDestroy', sessionId, sessionMeta).catch(() => {});
     }
 
     #serializeSession = (session) => ({
