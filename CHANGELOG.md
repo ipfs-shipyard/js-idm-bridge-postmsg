@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.3.0](https://github.com/ipfs-shipyard/js-idm-bridge-postmsg/compare/v0.2.8...v0.3.0) (2019-06-21)
+
+
+### Features
+
+* pass app to unlock method ([#2](https://github.com/ipfs-shipyard/js-idm-bridge-postmsg/issues/2)) ([a472e0e](https://github.com/ipfs-shipyard/js-idm-bridge-postmsg/commit/a472e0e))
+
+
+
 ### [0.2.8](https://github.com/ipfs-shipyard/js-idm-bridge-postmsg/compare/v0.2.7...v0.2.8) (2019-06-20)
 
 
