@@ -51,7 +51,7 @@ class MediatorSide {
         this.#assertPrompt('authenticate');
         this.#assertAppSameOrigin(app);
 
-        await this.#promptUnlock();
+        await this.#promptUnlock(app);
 
         app.id = await sha256(this.#clientChannel.parentOrigin);
 
@@ -100,13 +100,13 @@ class MediatorSide {
         }
     }
 
-    #promptUnlock = async () => {
+    #promptUnlock = async (app) => {
         const unlockFn = async (lockType, input) => {
             await this.#walletChannel.call('unlock', lockType, input);
         };
 
         const { pristine, enabledLockTypes } = await this.#walletChannel.call('getDataForUnlockPrompt');
-        const { ok } = await this.#prompts.unlock({ pristine, enabledLockTypes, unlockFn });
+        const { ok } = await this.#prompts.unlock({ app, pristine, enabledLockTypes, unlockFn });
 
         if (!ok) {
             throw new PromptDeniedError('Unlock prompt denied');
