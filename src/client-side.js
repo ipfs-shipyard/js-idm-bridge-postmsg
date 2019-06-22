@@ -60,7 +60,17 @@ class ClientSide {
 }
 
 const createClientSide = async (walletUrl) => {
-    const mediatorChannel = await createIframe(walletUrl);
+    let mediatorChannel;
+
+    try {
+        mediatorChannel = await createIframe(walletUrl);
+    } catch (err) {
+        if (err.name === 'TimeoutError') {
+            err.message = `Unable to connect to wallet at ${walletUrl}, please make sure it's open`;
+        }
+
+        throw err;
+    }
 
     return new ClientSide(walletUrl, mediatorChannel);
 };
