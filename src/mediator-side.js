@@ -73,7 +73,9 @@ class MediatorSide {
         await this.#walletChannel.call('destroySession', sessionId);
     }
 
-    async sign(sessionId, data, options) {
+    async sign(sessionId, data, app, options) {
+        this.#assertAppSameOrigin(app);
+
         options = {
             signWith: 'session',
             ...options,
@@ -88,7 +90,7 @@ class MediatorSide {
         this.#assertPrompt('unlock');
         this.#assertPrompt('authenticate');
 
-        await this.#promptUnlock();
+        await this.#promptUnlock(app);
         await this.#promptSign(sessionId, data);
 
         return this.#walletChannel.call('signWithDevice', session.identityId, data);

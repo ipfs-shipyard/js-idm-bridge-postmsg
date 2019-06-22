@@ -33,19 +33,19 @@ class ClientSide {
         await this.#mediatorChannel.call('unauthenticate', sessionId);
     }
 
-    async sign(sessionId, data, options) {
+    async sign(sessionId, data, app, options) {
         options = {
             signWith: 'session',
             ...options,
         };
 
         if (options.signWith === 'session') {
-            return this.#mediatorChannel.call('sign', sessionId, data, options);
+            return this.#mediatorChannel.call('sign', sessionId, data, app, options);
         }
 
         return openPrompt(
             this.#walletUrl,
-            (mediatorChannel) => mediatorChannel.call('sign', sessionId, data, options),
+            (mediatorChannel) => mediatorChannel.call('sign', sessionId, data, app, options),
             { callTimeout: PROMPT_CALL_TIMEOUT }
         );
     }
